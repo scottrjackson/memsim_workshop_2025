@@ -9,9 +9,10 @@ date: 2025-08-11
 - the workshop: **what's this all about?**
   - topics: models & simulations
   - technology: R, R Markdown, git
+  - random R tips sprinkled throughout
   - routine/agenda:
     - ideally a **discussion**, not lecture
-    - live coding
+    - coding together
     - stop frequently for questions
     - "two finger salute"
 
@@ -20,7 +21,7 @@ date: 2025-08-11
 **Stats**
 1. Do you know what a mean is?
 2. Do you know what a normal (aka Gaussian) distribution looks like, and what its parameters are?
-3. Can you explain what degrees of freedom are?
+3. Can you describe the gist of the Central Limit Theorem?
 4. Do you know how to interpret a t-test?
 5. Do you know how to fit a simple regression model?
 6. Do you know how (and why) to examine residuals in a regression?
@@ -41,10 +42,18 @@ date: 2025-08-11
 
 > All models are wrong, but some are useful.
 
+# Getting set up in R
+
+- RStudio project
+- R Markdown vs scripts
+- Looking ahead to git
+
 # Break activities
 
+- Pick another "generating process" distribution, and show that the CLT applies to this as well, using simulations. Try using all of the "technologies" we've discussed so far.
 - Think of your top question for the workshop.
 - What's one thing you'd like to review or understand better from what we've done so far?
+- Try installing [git](https://git-scm.com), pulling repo from [GitHub](https://github.com/scottrjackson/memsim_workshop_2025)
 
 # Technology list
 
@@ -62,6 +71,6 @@ date: 2025-08-11
 - Get [git](https://git-scm.com) installed
 - Pull the [course repo](https://github.com/scottrjackson/memsim_workshop_2025)
 - Either:
-  1. add your notes to your copy of the repo, OR
+  1. add your notes to *your local copy* of the repo, OR
   2. put your notes in a separate place
 - The idea here is for you to be able to easily "update" with any changes I make, without it messing up your own notes, code, etc.
