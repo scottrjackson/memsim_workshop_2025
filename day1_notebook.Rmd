@@ -48,9 +48,179 @@ date: 2025-08-11
 - R Markdown vs scripts
 - Looking ahead to git
 
+```{r}
+library(tidyverse)
+# install.packages("HistData")
+library(HistData)
+```
+
+
+# The simplest simulation: rolling dice
+
+```{r}
+die_faces <- 1:6
+# sample(die_faces, 7, replace = FALSE) # gets an error
+sample(die_faces, 7, replace = TRUE) 
+sample(die_faces, 100, replace = TRUE)
+weighted_results <- sample(die_faces, 10000, replace = TRUE, 
+       prob = c(.1, .15, .15, .15, .15, .3))
+print(weighted_results)
+xtabs(~ weighted_results)
+# xtabs(~ x + y, data = mydata)
+```
+
+## plot some die rolls
+
+```{r}
+die_rolls <- data.frame(roll_result = sample(1:6, 100000, replace = TRUE))
+ggplot(die_rolls, aes(roll_result)) + geom_bar()
+```
+
+Continuous uniform:
+
+```{r}
+cont_values <- data.frame(result = runif(1000000, 0, 1))
+ggplot(cont_values, aes(result)) + geom_histogram()
+```
+
+Gaussian:
+
+```{r}
+normals <- data.frame(result = rnorm(10000))
+normal_vector <- rnorm(10000)
+ggplot(normals, aes(x = result)) + geom_histogram()
+ggplot(data = NULL, aes(x = normal_vector)) + geom_density()
+
+```
+
+# Galton data
+
+  - from the `HistData` package
+
+
+
+```{r}
+head(Galton)
+
+ggplot(Galton, aes(x = parent)) + geom_histogram()
+
+ggplot(Galton, aes(x = parent, y = child)) + geom_point()
+
+ggplot(Galton, aes(x = parent, y = child)) + geom_jitter()
+
+ggplot(Galton, aes(x = parent, y = child)) + 
+  geom_point(position = "jitter")
+
+ggplot(Galton, aes(x = parent, y = child)) + 
+  geom_point(position = position_jitter(width = 2))
+
+ggplot(Galton, aes(x = parent, y = child)) + 
+  geom_point(position = position_jitter(width = 2, height = 2))
+
+
+ggplot(Galton, aes(x = parent)) + geom_histogram()
+
+(parent_mean <- mean(Galton$parent))
+(parent_sd <- sd(Galton$parent))
+
+Galton$parent_densities <- dnorm(Galton$parent, 
+                          mean = parent_mean,
+                          sd = parent_sd)
+
+head(Galton)
+
+ggplot(Galton, aes(x = parent)) + 
+  geom_histogram(aes(y = after_stat(density))) +
+  geom_density()
+
+ggplot(Galton, aes(x = parent)) + 
+  geom_histogram(aes(y = after_stat(density))) +
+  geom_line(aes(y = parent_densities))
+
+
+ggplot(Galton, aes(x = parent)) + 
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_line(aes(y = parent_densities))
+
+```
+
+
 # Break activities
 
-- Pick another "generating process" distribution, and show that the CLT applies to this as well, using simulations. Try using all of the "technologies" we've discussed so far.
+- Using `rnorm()`, try to create a set of 928 normally-distributed predictions for Galton parent heights
+
+```{r}
+parent_sims <- data.frame(parent = rnorm(928, 
+                                         mean = parent_mean,
+                                         sd = parent_sd))
+ggplot(parent_sims, aes(parent)) + geom_histogram()
+ggplot(parent_sims, aes(parent)) + geom_density()
+ggplot(parent_sims, aes(parent)) + geom_density() +
+  geom_density(aes(x = Galton$parent), color = "red")
+
+```
+
+- Using `sample()` and densities from `dnorm()`, try to create a model that generates a shape that matches the Galton parents
+
+```{r}
+parent_possible <- unique(Galton$parent)
+possible_densities <- dnorm(parent_possible, parent_mean, parent_sd)
+parent_samples <- data.frame(parent = 
+                               sample(parent_possible, 928, 
+                                      replace = TRUE,
+                                      prob = possible_densities))
+parent_samples2 <- Galton$parent
+possible_densities2 <- dnorm(parent_samples2, 
+                             parent_mean, parent_sd)
+parent_samples2 <- data.frame(parent = 
+                               sample(parent_samples2, 928, 
+                                      replace = TRUE,
+                                      prob = possible_densities2))
+
+ggplot(parent_samples, aes(parent)) + geom_histogram()
+
+ggplot(parent_samples, aes(parent)) + geom_density() +
+  geom_density(aes(x = Galton$parent), color = "red")
+
+ggplot(parent_samples2, aes(parent)) + geom_density() +
+  geom_density(aes(x = Galton$parent), color = "red")
+
+
+parent_samples3 <- data.frame(parent = 
+                               sample(Galton$parent, 928, 
+                                      replace = TRUE))
+
+
+Galton$parent_bimodal <- Galton$parent + c(0, 6)
+ggplot(Galton, aes(parent_bimodal)) + geom_histogram()
+
+parent_bm_mean <- mean(Galton$parent_bimodal)
+parent_bm_sd <- sd(Galton$parent_bimodal)
+
+parent_possible <- unique(Galton$parent_bimodal)
+possible_densities <- dnorm(parent_possible, 
+                            parent_bm_mean, 
+                            parent_bm_sd)
+parent_samples <- data.frame(parent = 
+                               sample(parent_possible, 928, 
+                                      replace = TRUE,
+                                      prob = possible_densities))
+parent_samples2 <- data.frame(parent = 
+                               sample(Galton$parent_bimodal, 928, 
+                                      replace = TRUE))
+
+ggplot(parent_samples2, aes(parent)) + geom_density() +
+  geom_density(aes(x = Galton$parent_bimodal), color = "red")
+
+ggplot(parent_samples, aes(parent)) + geom_density() +
+  geom_density(aes(x = Galton$parent_bimodal), color = "red")
+
+
+
+```
+
+
+
 - Think of your top question for the workshop.
 - What's one thing you'd like to review or understand better from what we've done so far?
 - Try installing [git](https://git-scm.com), pulling repo from [GitHub](https://github.com/scottrjackson/memsim_workshop_2025)
