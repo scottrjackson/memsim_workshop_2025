@@ -1,0 +1,67 @@
+---
+title: "Data Simulation & Hierarchical Models: Day 1"
+date: 2025-08-11
+---
+
+# Introductions
+
+- me (Scott)
+- the workshop: **what's this all about?**
+  - topics: models & simulations
+  - technology: R, R Markdown, git
+  - routine/agenda:
+    - ideally a **discussion**, not lecture
+    - live coding
+    - stop frequently for questions
+    - "two finger salute"
+
+## Background quizzes
+
+**Stats**
+1. Do you know what a mean is?
+2. Do you know what a normal (aka Gaussian) distribution looks like, and what its parameters are?
+3. Can you explain what degrees of freedom are?
+4. Do you know how to interpret a t-test?
+5. Do you know how to fit a simple regression model?
+6. Do you know how (and why) to examine residuals in a regression?
+7. Do you know how to specify and interpret a mixed-effects (aka hierarchical) regression model?
+8. Do you know how to simulate data from a fitted MEM?
+
+**R**
+1. Have you pasted and run code into the R console?
+2. Have you written and run code in an R script?
+3. Have you written and run code in an R Markdown file?
+4. Do you know the difference(s) between vectors and lists in R?
+5. Have you used any of the Tidyverse packages?
+6. Have you used programming structures like `if()` or loops?
+7. Have you defined your own functions?
+8. Have you written your own packages?
+
+# Topic discussion: Models and Simulations
+
+> All models are wrong, but some are useful.
+
+# Break activities
+
+- Think of your top question for the workshop.
+- What's one thing you'd like to review or understand better from what we've done so far?
+
+# Technology list
+
+- `sample()`
+- `rnorm()` etc. (`?Distributions`)
+- loops
+- `function()`
+- `replicate()`
+
+# Homework (encouraged, not graded)
+
+- Recap/complete the "break" questions from above:
+  - Think of your top question for the workshop.
+  - What's one thing you'd like to review or understand better from what we've done so far?
+- Get [git](https://git-scm.com) installed
+- Pull the [course repo](https://github.com/scottrjackson/memsim_workshop_2025)
+- Either:
+  1. add your notes to your copy of the repo, OR
+  2. put your notes in a separate place
+- The idea here is for you to be able to easily "update" with any changes I make, without it messing up your own notes, code, etc.
