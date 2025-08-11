@@ -40,7 +40,19 @@ date: 2025-08-11
 
 # Topic discussion: Models and Simulations
 
+## Why we need models
+
 > All models are wrong, but some are useful.
+
+- Models are *useful approximations*.
+- We know they won't fit our data "perfectly" because they simplify things in some way.
+- But they help us wrap our heads around things.
+
+## Why simulations are helpful
+
+- Simulations can help us understand our models better.
+- Simulations can be great general-purpose solutions for stats problems where the math is too difficult.
+
 
 # Getting set up in R
 
@@ -48,42 +60,97 @@ date: 2025-08-11
 - R Markdown vs scripts
 - Looking ahead to git
 
+## Loading packages
+
+- It's a good idea to have one chunk like this at the top of your file where you can specify all of your `library()` statements.
+- Just remember that you should only run `install.packages()` once to install it the first time, so don't include it in code that you intend to run more than once.
+
 ```{r}
-library(tidyverse)
+library(tidyverse) # this includes `ggplot2`
 # install.packages("HistData")
-library(HistData)
+library(HistData)  # this package contains lots of classic data sets, including the `Galton` data we'll use below. 
 ```
 
 
-# The simplest simulation: rolling dice
+# The simplest simulations: bags of numbers and rolling dice
+
+- The Bag Analogy:
+  - We can think about data as a bag of numbers.
+  - When we collect data, we pull numbers out of the bag to observe them.
+  - The processes that *populate* the bags are often the thing we care about.
+  - Models tend to focus on those processes.
+  - If you put a number back into the bag after looking at it, that's called *sampling with replacement*.
+  - Taking the number out when you see it is called *sampling without replacement*.
+
+## Rolling a die many times
+
+  - Rolling a die over and over is like *sampling with replacement*, because you can always re-roll the same number (assuming normal dice).
+  - If you don't *replace*, you run out of numbers after 6!
+
 
 ```{r}
 die_faces <- 1:6
 # sample(die_faces, 7, replace = FALSE) # gets an error
 sample(die_faces, 7, replace = TRUE) 
 sample(die_faces, 100, replace = TRUE)
+```
+
+You can also *weight* the numbers in the bag, by making some numbers more likely to be picked.
+
+In R, you can use the `sample()` function with the `prob` argument.
+- It defaults to every item being equally likely to pull from the "bag".
+- You can give it a vector of numbers.
+- That vector should be the same length as the sample
+  - In other words, for every number in the "bag", you need to have a corresponding weight.
+- The weights need to sum to 1 in order to be a proper probability vector, but the weights don't actually need to sum to 1 for the function to work. (See `?sample` for more details.)
+
+```{r}
 weighted_results <- sample(die_faces, 10000, replace = TRUE, 
        prob = c(.1, .15, .15, .15, .15, .3))
 print(weighted_results)
 xtabs(~ weighted_results)
-# xtabs(~ x + y, data = mydata)
+# xtabs(~ x + y, data = mydata) # xtabs() uses a "formula" notation
 ```
 
-## plot some die rolls
+- *Side tip*: either `table()` or `xtabs()` can be a good way to tabulate counts in a data frame or vector.
+
+## Visualizing the results: a "pseudo" uniform distribution
+
+- Since every value is equally likely, the distribution looks "flat".
+- *Side note*: histograms can get funny artifacts at the edges, depending on the binning, which is why it looks like the values "drop off" right at the edge in the plot below. The actual distribution is flat all the way to both edges.
+- *Side note #2*: since `ggplot()` likes to work with data frames, we will generally put our data in a data frame, even if it's just a single column.
 
 ```{r}
 die_rolls <- data.frame(roll_result = sample(1:6, 100000, replace = TRUE))
 ggplot(die_rolls, aes(roll_result)) + geom_bar()
 ```
 
-Continuous uniform:
+## Visualizing a "true" uniform
+
+- The proper *uniform distribution* is also flat, but it's a *continuous* distribution.
+- With continuous numbers, calculating the probability of any particular value is problematic, because in theory it's infinitely small, because there are an infinite number of numbers on the number line between any two points.
+- So we have the mathematical/theoretical notion of a uniform distribution, which gives us a way to calculate *probability densities*.
+- In R, we have convenient functions like `runif()` to generate random numbers from various distributions.
+- `runif` stands for Random UNIForm value
+- Here's a million values between 0 and 1
 
 ```{r}
 cont_values <- data.frame(result = runif(1000000, 0, 1))
 ggplot(cont_values, aes(result)) + geom_histogram()
 ```
 
-Gaussian:
+- The bigger point is that now we have a *model*: some simplified way to describe our data, using math and a couple of parameters.
+- The uniform distribution has two parameters: a *minimum* and a *maximum*.
+- That's a very simple model! With just a formula and those two parameters, we can express the concept of a distribution of *any* number between two values, but where any number is just as likely as any other.
+- This is intuitively the same as rolling a complete fair die, where any value is equally likely, but it's technically different, since it's not just a limited selection of discrete values, but rather generation from a continuous distribution.
+
+## Visualizing a normal distribution
+
+- The *normal* or *Gaussian* distribution is just a different model.
+- It also has two parameters, but these are different:
+  - *mean*
+  - *standard deviation*
+- But again, it's a simplified view of the world, where all we need to do is figure out the mean and std dev and we can describe a very commonly occurring distribution of data.
 
 ```{r}
 normals <- data.frame(result = rnorm(10000))
@@ -93,11 +160,19 @@ ggplot(data = NULL, aes(x = normal_vector)) + geom_density()
 
 ```
 
-# Galton data
+# Examining theoretical and empirical distributions, based on real data
+
+## Galton data
 
   - from the `HistData` package
-
-
+  - classic data set of heights from 1886 paper that introduced the concept of regression to the mean
+  - In *theory*, height should be continuous, but in this data set, it looks quite discrete!
+  - Galton transformed his data in a few ways, and in particular the "resolution" of the measurement is every inch, but it's on the half-inches. 
+  - So for example, there are heights of 64.5 and 65.5 inches, but no values in between.
+  - We can use `jitter` as a tool to visualize this kind of data, since otherwise it's impossible to tell how many points are being plotted on top of other points.
+  - In practice, you should strike a balance between displaying the data *faithfully* (so, not making it look like it's more continuous thaqn it is, in this case), and displaying it in a way that's *informative* about the actual shape of the data.
+  - A scatterplot or dotplot can sometimes make these things more obvious than just histograms.
+  
 
 ```{r}
 head(Galton)
@@ -116,10 +191,19 @@ ggplot(Galton, aes(x = parent, y = child)) +
 
 ggplot(Galton, aes(x = parent, y = child)) + 
   geom_point(position = position_jitter(width = 2, height = 2))
+```
 
+# Simulating data from a model vs. simply resampling
 
-ggplot(Galton, aes(x = parent)) + geom_histogram()
+- What is the distribution of parent heights in this data?
+- Definitely not uniform!
+- Relatively close to standard, maybe.
+- So we can use our two Gaussian parameters to simulate data, and then compare these *model predictions* to what we actually observed.
+- The `dnorm()` function in R computes the probability density for a given `x` value (or set of `x` values), for given model parameters.
+- Below, we will put these densities in the data frame as a new column.
+- *R tip*: surrounding an entire line with parentheses is a way to print out a result at the same time that you're assigning it to a variable.
 
+```{r}
 (parent_mean <- mean(Galton$parent))
 (parent_sd <- sd(Galton$parent))
 
@@ -128,7 +212,19 @@ Galton$parent_densities <- dnorm(Galton$parent,
                           sd = parent_sd)
 
 head(Galton)
+```
 
+## Plotting empirical and theoretical densities
+
+- The `geom_density()` geom in ggplot2 is a convenient way to plot the *kernel density* of a set of values.
+- This can be called an *empirical* density, because it's like a probability curve that's fit to whatever values were observed.
+- But this is not the same as *theoretical* probability density that we calculated above.
+- The first plot below shows the histogram of parent heights with the empirical density (note that we need to transform the histogram y-axis values so that it will fit on the same scale).
+- The second (and third) plot shows a histogram along with the *theoretical* density.
+- The latter is a better indicator of "what our model would predict".
+- The third plot shows how fiddling with binwdiths can help, especially with this data that has such large "gaps" between values.
+
+```{r}
 ggplot(Galton, aes(x = parent)) + 
   geom_histogram(aes(y = after_stat(density))) +
   geom_density()
@@ -137,7 +233,6 @@ ggplot(Galton, aes(x = parent)) +
   geom_histogram(aes(y = after_stat(density))) +
   geom_line(aes(y = parent_densities))
 
-
 ggplot(Galton, aes(x = parent)) + 
   geom_histogram(aes(y = after_stat(density)), bins = 10) +
   geom_line(aes(y = parent_densities))
@@ -145,7 +240,9 @@ ggplot(Galton, aes(x = parent)) +
 ```
 
 
-# Break activities
+# Practice activity: simulating new values
+
+## Exercise 1:
 
 - Using `rnorm()`, try to create a set of 928 normally-distributed predictions for Galton parent heights
 
@@ -160,87 +257,169 @@ ggplot(parent_sims, aes(parent)) + geom_density() +
 
 ```
 
-- Using `sample()` and densities from `dnorm()`, try to create a model that generates a shape that matches the Galton parents
+Notes:
+
+- I picked 928 since that's how much data we had originally, to make it a little more straightforward to compare.
+- Using `rnorm()` creates a much "smoother" looking set of data, because it's a continuous distribution!
+- So in this way, our model predictions look different from the data we observed.
+- The last plot contrasts the (line in black) empirical density of the values that were generated by our *model* (rnorm) to the empirical density that is simply *fit* to the data. You can imagine this as a comparison between the pattern we saw (in red), with the way that our model "sees" it (in black).
+
+## Exercise 2:
+
+- Using `sample()` and densities from `dnorm()`, try to create a model that generates a shape that more closely matches the Galton parents.
+
+- The strategy I'm taking here is to first isolate the discrete possible values.
+- The function `unique()` reduces a vector or data frame down, essentially eliminating any exact repeats.
 
 ```{r}
 parent_possible <- unique(Galton$parent)
+```
+
+- We can still compute the probability densities of these values, using the same mean and sd we calculated before.
+- Recall that this mean and sd comprise the "model".
+
+```{r}
 possible_densities <- dnorm(parent_possible, parent_mean, parent_sd)
+```
+
+- Now, instead of generating (continuous) values with `rnorm()`, we can use `sample()` to pick from these possible values.
+- And we can pass our vector of probability densities (that we just calculated) to provide the "weights" for the sampling function.
+- In other words, we are using our model (Gaussian) to tell us how probable each of those discrete values ought to be.
+
+```{r}
 parent_samples <- data.frame(parent = 
                                sample(parent_possible, 928, 
                                       replace = TRUE,
                                       prob = possible_densities))
-parent_samples2 <- Galton$parent
-possible_densities2 <- dnorm(parent_samples2, 
+```
+
+## Contrasting Excercise 2:
+
+- From the workshop discussion: what if we sampled from the data set instead of the `unique()` values?
+
+- Version 1: a mistake
+  1. use the observed data (the whole column), not just the unique discrete values
+  2. calculate theoretical densities for all of these
+  3. pull samples from the observed data, but *also* weight those according to the densities
+
+- The problem with this is that we are "double-dipping" (not a technical term!) on the probabilities. If we are sampling, but the numbers in the bag are the numbers *as we observed them*, then the probabilities of which values are more likely is already being represented.
+- This process of *sampling with replacement* from a data set in order to make a "fake" data set can be very useful and it forms the foundation of the *bootstrap* method of obtaining difficult-to-calculate estimates.
+- But if you do this, you wouldn't also weight the samples -- they are already inherently "weighted"!
+- But to be clear: simply re-sampling your data is a way of simulating the *empirical* (i.e., observed) distribution, not a *theoretical* distribution that reflects our model.
+
+```{r}
+parent_samples_observed <- Galton$parent
+observed_densities <- dnorm(parent_samples_observed, 
                              parent_mean, parent_sd)
-parent_samples2 <- data.frame(parent = 
-                               sample(parent_samples2, 928, 
-                                      replace = TRUE,
-                                      prob = possible_densities2))
+parent_samples_doubledip <- data.frame(parent = 
+                                  sample(parent_samples_observed, 928, 
+                                          replace = TRUE,
+                                          prob = observed_densities))
 
-ggplot(parent_samples, aes(parent)) + geom_histogram()
-
-ggplot(parent_samples, aes(parent)) + geom_density() +
+ggplot(parent_samples_doubledip, aes(parent)) + 
+  geom_density() +
   geom_density(aes(x = Galton$parent), color = "red")
+```
 
-ggplot(parent_samples2, aes(parent)) + geom_density() +
-  geom_density(aes(x = Galton$parent), color = "red")
+- To contrast, here's what simple re-sampling would look like (unweighted)
+- Note how closely these overlap, but they are not "perfect", because by re-sampling, the new data set is not *exactly* the same as the old.
 
-
-parent_samples3 <- data.frame(parent = 
+```{r}
+parent_resamples <- data.frame(parent = 
                                sample(Galton$parent, 928, 
                                       replace = TRUE))
+ggplot(parent_resamples, aes(parent)) + 
+  geom_density() +
+  geom_density(aes(x = Galton$parent), color = "red")
+```
 
+## Exercise follow-up
 
+- Finally, in order to help clarify the distinctions we are making, let's create a variation of this data set that clearly does not fit our model of "a simple Gaussian distribution."
+- We can use a feature of R called "recycling" to make a new column that is based on the parent heights, but with 6 added to every other row.
+- This creates a clear *bimodal* distribution.
+- We'll also calculate the mean and sd of this new data.
+
+```{r}
 Galton$parent_bimodal <- Galton$parent + c(0, 6)
-ggplot(Galton, aes(parent_bimodal)) + geom_histogram()
-
 parent_bm_mean <- mean(Galton$parent_bimodal)
 parent_bm_sd <- sd(Galton$parent_bimodal)
+ggplot(Galton, aes(parent_bimodal)) + geom_histogram()
+```
 
-parent_possible <- unique(Galton$parent_bimodal)
-possible_densities <- dnorm(parent_possible, 
-                            parent_bm_mean, 
-                            parent_bm_sd)
-parent_samples <- data.frame(parent = 
-                               sample(parent_possible, 928, 
-                                      replace = TRUE,
-                                      prob = possible_densities))
-parent_samples2 <- data.frame(parent = 
-                               sample(Galton$parent_bimodal, 928, 
-                                      replace = TRUE))
+- So we will simulate three sets of data:
+  1. A simple *re-sampling*, which is "model agnostic", and which will virtually always reproduce the original distribution.
+  2. A simple *theoretical* sample, which is generated straight from our Gaussian model (using `rnorm()`).
+  3. A modified model that still calculates *theoretical* probability densities, but which captures the discrete nature of the original data.
 
-ggplot(parent_samples2, aes(parent)) + geom_density() +
+The first one "fits" this new bimodal distribution, because it's just re-sampling.
+
+```{r}
+parent_bm_resamples <- data.frame(parent = 
+                                  sample(Galton$parent_bimodal, 928, 
+                                         replace = TRUE))
+ggplot(parent_bm_resamples, aes(parent)) + 
+  geom_density() +
   geom_density(aes(x = Galton$parent_bimodal), color = "red")
+```
 
-ggplot(parent_samples, aes(parent)) + geom_density() +
+The second one generates from a nice, smooth continuous distribution that just happens to be a terrible fit for this new data. This is showing us that our *model* (the black density line) is completely wrong: this is not a simple Gaussian distribution!
+
+```{r}
+parent_bm_sims <- data.frame(parent = rnorm(928, 
+                                         mean = parent_bm_mean,
+                                         sd = parent_bm_sd))
+ggplot(parent_bm_sims, aes(parent)) + geom_histogram()
+ggplot(parent_bm_sims, aes(parent)) + geom_density() +
   geom_density(aes(x = Galton$parent_bimodal), color = "red")
+```
 
+The third one captures the not-quite-continuous nature of the original variable, by using our weighted-sample-from-unique trick, but the model is still wrong, because again, we are generating samples based on the "single Gaussian" model (using `dnorm()`).
 
+```{r}
+parent_bm_possible <- unique(Galton$parent_bimodal)
+possible_bm_densities <- dnorm(parent_bm_possible, 
+                               parent_bm_mean, 
+                               parent_bm_sd)
+parent_bm_samples <- data.frame(parent = 
+                                sample(parent_bm_possible, 928, 
+                                       replace = TRUE,
+                                       prob = possible_bm_densities))
+
+ggplot(parent_bm_samples, aes(parent)) + geom_histogram()
+
+ggplot(parent_bm_samples, aes(parent)) + geom_density() +
+  geom_density(aes(x = Galton$parent_bimodal), color = "red")
 
 ```
 
 
+# Homework (encouraged, not graded)
 
 - Think of your top question for the workshop.
 - What's one thing you'd like to review or understand better from what we've done so far?
 - Try installing [git](https://git-scm.com), pulling repo from [GitHub](https://github.com/scottrjackson/memsim_workshop_2025)
-
-# Technology list
-
-- `sample()`
-- `rnorm()` etc. (`?Distributions`)
-- loops
-- `function()`
-- `replicate()`
-
-# Homework (encouraged, not graded)
-
-- Recap/complete the "break" questions from above:
-  - Think of your top question for the workshop.
-  - What's one thing you'd like to review or understand better from what we've done so far?
-- Get [git](https://git-scm.com) installed
-- Pull the [course repo](https://github.com/scottrjackson/memsim_workshop_2025)
-- Either:
+- With the git repo, I recommend either:
   1. add your notes to *your local copy* of the repo, OR
   2. put your notes in a separate place
 - The idea here is for you to be able to easily "update" with any changes I make, without it messing up your own notes, code, etc.
+
+
+# Advanced practice
+
+- Using some of the functions we've used here, along with either a loop or the `replicate()` function, use simulations to see how the Central Limit Theory works in action.
+- In other words:
+  1. start by generating some random numbers from a NON-normal distribution (pick any one you like), then 
+  2. get the average of those numbers, then 
+  3. repeat steps 1 & 2 a bunch, putting the results into a vector of averages
+  4. plot the vector of averages to see if it looks like a Gaussian
+
+- Tip: start with just one number to make sure you're generating the non-normal distribution correctly, then try gradually increasing the number of values you're generating and averaging in steps 1 & 2.
+
+- How many numbers do you need to average together (in step 1 & 2) before the distribution starts looking normal?
+- How quickly does it change?
+
+```{r}
+
+```
+
