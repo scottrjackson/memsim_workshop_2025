@@ -35,6 +35,9 @@ head(Galton)
 ## quick regression
 
 ```{r}
+parent_mean <- mean(Galton$parent)
+parent_sd <- sd(Galton$parent)
+
 galton_fit <- lm(child ~ 1 + parent, data = Galton)
 print(galton_fit)
 galton_fit
@@ -70,4 +73,60 @@ ggplot(Galton, aes(parent, child)) + geom_jitter() +
 
 ```
 
+## Using a model to simulate data
+
+y ~ 1 (intercept) + slope * x + (Error)
+
+```{r}
+ggplot(Galton, aes(parent, child)) + geom_jitter() + 
+  geom_abline(aes(intercept = galton_intercept,
+                  slope = galton_slope), color = "red", linetype = 2) +
+  xlim(c(0, 74)) + ylim(c(0, 76))
+
+fitted_galton <- galton_fit$fitted.values
+
+ggplot(Galton, aes(parent, child)) + geom_jitter() + 
+  geom_line(aes(y = fitted_galton))
+
+```
+
+
+## Residual error
+
+```{r}
+galton_fit$residuals
+
+summary(galton_fit)
+(sqrt(sum(galton_fit$residuals^2)/928))
+sd(galton_fit$residuals)
+(sqrt(sum(galton_fit$residuals^2)/926))
+
+(model_error <- summary(galton_fit)$sigma)
+
+```
+
+## Simulate data
+
+```{r}
+sample_size <- nrow(Galton)
+galton_fake <- data.frame(parent = rnorm(sample_size, 
+                                         mean = parent_mean,
+                                         sd = parent_sd))
+galton_fake$child <- galton_intercept + 
+  galton_slope * galton_fake$parent + 
+  rnorm(sample_size, mean = 0, sd = model_error)
+
+ggplot(galton_fake, aes(parent, child)) + geom_point()
+
+ggplot(galton_fake, aes(parent, child)) +
+  geom_jitter(aes(x = Galton$parent, y = Galton$child), color = "red") +
+  geom_point()
+```
+
+
+
+```{r}
+plot_base <- ggplot(galton_fake, aes(parent, child))
+plot_base + geom_point()
+```
 
