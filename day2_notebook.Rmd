@@ -9,8 +9,65 @@ date: 2025-08-12
 
 # Review and questions
 
+- CLT stuff (see Day 1 notebook)
+
 # Outline for today
 
 - Fit a simple regression
 - Simulating data from a regression
 - Estimating power through simulation
+
+# Load packages
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(HistData)
+```
+
+
+# Galton (again)
+
+```{r}
+head(Galton)
+```
+
+## quick regression
+
+```{r}
+galton_fit <- lm(child ~ 1 + parent, data = Galton)
+print(galton_fit)
+galton_fit
+summary(galton_fit)
+
+names(galton_fit)
+names(summary(galton_fit))
+str(galton_fit)
+galton_fit$coefficients[2]
+galton_fit$coefficients["parent"]
+
+(galton_intercept <- galton_fit$coefficients["(Intercept)"])
+(galton_intercept <- galton_fit$coefficients[1])
+
+(galton_slope <- galton_fit$coefficients["parent"])
+```
+
+
+## Visualize model fit
+
+```{r}
+ggplot(Galton, aes(parent, child)) + geom_jitter() + 
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE)
+
+ggplot(Galton, aes(parent, child)) + geom_jitter() + 
+  geom_abline(aes(intercept = galton_intercept,
+                  slope = galton_slope), color = "red", linetype = 2)
+
+ggplot(Galton, aes(parent, child)) + geom_jitter() + 
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE) + 
+  geom_abline(aes(intercept = galton_intercept,
+                  slope = galton_slope), color = "red", linetype = 2)
+
+```
+
+
