@@ -407,7 +407,7 @@ ggplot(parent_bm_samples, aes(parent)) + geom_density() +
 
 # Advanced practice
 
-- Using some of the functions we've used here, along with either a loop or the `replicate()` function, use simulations to see how the Central Limit Theory works in action.
+- Using some of the functions we've used here, along with either a loop or the `replicate()` function, use simulations to see how the Central Limit Theorem works in action.
 - In other words:
   1. start by generating some random numbers from a NON-normal distribution (pick any one you like), then 
   2. get the average of those numbers, then 
@@ -420,6 +420,17 @@ ggplot(parent_bm_samples, aes(parent)) + geom_density() +
 - How quickly does it change?
 
 ```{r}
+die_roll_averages <- replicate(20000, 
+                               mean(sample(1:6, 1000, replace = TRUE)))
+
+ggplot(data = NULL, aes(die_roll_averages)) + geom_histogram()
+
+my_process <- function() {
+  mean(sample(1:6, 1000, replace = TRUE))
+}
+die_roll_averages <- replicate(20000, 
+                               my_process())
+
 
 ```
 
