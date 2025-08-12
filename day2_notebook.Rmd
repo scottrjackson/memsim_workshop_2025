@@ -26,19 +26,40 @@ library(HistData)
 ```
 
 
-# Galton (again)
+# Fitting and visualizing a simple linear model 
+
+## Galton (1886) data
+
+  - We'll continue using the Galton data from the HistData package.
 
 ```{r}
 head(Galton)
 ```
 
-## quick regression
+## Fitting a model and extracting values
+
+  - Fitting a model with `lm()` can be very straightforward.
+  - The `formula` argument uses R's special "formula" data type
+  - The tilde `~` is the telltale sign of a formula
+  - You can usually read a formula of `y ~ x + z` as:
+    - `y` is distributed as a function of `x` and `z`
+  - For a simple one-predictor linear model, we can read:
+    - `y ~ 1 + x`
+    - as: the dependent variable `y` is predicted by an intercept (1) and a slope multiplied by the `x` values
+    - In R, you can usually leave off the `1` for the intercept, because it is assumed as a default
+    - so `y ~ x` fits the same model as `y ~ 1 + x`
 
 ```{r}
-parent_mean <- mean(Galton$parent)
-parent_sd <- sd(Galton$parent)
-
 galton_fit <- lm(child ~ 1 + parent, data = Galton)
+```
+
+- There are lots of ways to examine the fit results, by inspecting or running other functions on the `lm` model fit object.
+- `summary()` gets you a standard "results" print out for the model fit, but it also generates some values you can grab to work with.
+- `names()` is usually the first step in inspecting an object, because it just gives you the names of the components of the object
+- For example, an `lm` object has a component named "coefficients", so you can access the values in that component using the regular dollar-sign notation, as below.
+- If you want a lot more details than just the name of each component, you can use the function `str()` (which stands for "structure").
+
+```{f}
 print(galton_fit)
 galton_fit
 summary(galton_fit)
@@ -46,9 +67,13 @@ summary(galton_fit)
 names(galton_fit)
 names(summary(galton_fit))
 str(galton_fit)
-galton_fit$coefficients[2]
-galton_fit$coefficients["parent"]
+```
 
+- So we can use this to extract specific parameters like the intercept and slope values. Note that you can use either numbers or names.
+- The intercept is always [1], slope is [2], and if you have more predictors it goes up from there.
+- The names are always "(Intercept)" and then the names of the predictors as they show up in the formula you used when fitting the model.
+
+```{r}
 (galton_intercept <- galton_fit$coefficients["(Intercept)"])
 (galton_intercept <- galton_fit$coefficients[1])
 
@@ -56,7 +81,15 @@ galton_fit$coefficients["parent"]
 ```
 
 
-## Visualize model fit
+## Visualizing model fit
+
+- Now that we have the intercept and slope parameters, we can visualize the regression line, because that's literally just the intercept and slope of that line.
+- `ggplot2` has a special geom (`geom_smooth()`) that you can use to plot regression lines without fitting the model separately.
+- This is handy when you just want to do a quick plot with a regression line, but here, we can also double-check out work by plotting the line based on our parameters, just to make sure it's getting the same.
+- `geom_smooth()` can actually work with different methods. The default is called a "loess" (or sometimes "lowess") smoother, which is sort of like a close-fitting regression that tries to follow more "wiggles" in the trend instead of just a fixed line. This is also often helpful when initially exploring data.
+- In order to plot a regression line with `geom_smooth()`, you can use `method = "lm"`, which literally uses the `lm()` function in the background to get the parameters. And if you don't want R bugging you about the formula, you can specify the exact formula for the regression, as `y ~ x` if you have your x-axis predicting the y-axis.
+- The plots below show both, and show that these lines are smack dab on top of each other, which helps reassure us that our "manual" regression line is correct.
+- I'm altering the color of the `geom_smooth()` line to yellow and removing the default standard area shading to make this overlap a bit more visible.
 
 ```{r}
 ggplot(Galton, aes(parent, child)) + geom_jitter() + 
@@ -67,15 +100,38 @@ ggplot(Galton, aes(parent, child)) + geom_jitter() +
                   slope = galton_slope), color = "red", linetype = 2)
 
 ggplot(Galton, aes(parent, child)) + geom_jitter() + 
-  geom_smooth(method = "lm", formula = y ~ x, se = FALSE) + 
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "yellow") + 
   geom_abline(aes(intercept = galton_intercept,
                   slope = galton_slope), color = "red", linetype = 2)
 
 ```
 
-## Using a model to simulate data
+- So far, we have been focusing on the linear part of the linear model.
+- So basically:
 
-y ~ 1 (intercept) + slope * x + (Error)
+y ~ intercept + slope * x 
+
+- This means that we can make our "best guess" prediction for `y` given an `x` value by multiplying the `x` value by our slope parameter and adding the intercept. This ends up with all of the predictions landing exactly on the regression line.
+- In other words, the regression line is our "prediction line".
+- We can check that yet another way by plotting the `fitted.values` from our model fit object
+
+```{r}
+fitted_galton <- galton_fit$fitted.values
+
+ggplot(Galton, aes(parent, child)) + geom_jitter() + 
+  geom_line(aes(y = fitted_galton))
+```
+
+## Visualizing the model intercept
+
+- As kind of a side note, I just wanted to point out the interpretation of the intercept.
+- The thing to memorize is:
+  - *The intercept is the predicted value where all predictors are zero.*
+- Sometimes this is meaningless or irrelevant.
+- In the Galton data, this would mean that the intercept value of 23.94 means:
+  - For a parent who is zero inches tall, we expect their child to be (about) 24 inches tall.
+- Here's a plot that expands the graph axes so that we can see where our regression line hits the y-axis (i.e., the intercept).
+- This is a nice visual because it helps illustrate that the reason we don't care much about the intercept is that it is so far away from any of our actual data. Of course, the idea of a parent with a height of zero inches is also ridiculous.
 
 ```{r}
 ggplot(Galton, aes(parent, child)) + geom_jitter() + 
@@ -83,39 +139,120 @@ ggplot(Galton, aes(parent, child)) + geom_jitter() +
                   slope = galton_slope), color = "red", linetype = 2) +
   xlim(c(0, 74)) + ylim(c(0, 76))
 
-fitted_galton <- galton_fit$fitted.values
-
-ggplot(Galton, aes(parent, child)) + geom_jitter() + 
-  geom_line(aes(y = fitted_galton))
-
 ```
 
+- We'll talk more about centering, etc. tomorrow.
+
+# Using a model to simulate data
+
+- Back to the goal of wanting to simulate data from our model, we are not quite there.
+- We can generate predictions on the regression line, but that's not enough.
+- Intuitively, our data does not look like a perfectly straight line!
+- What we are missing is the *error* component, or the "noise" around our predictions.
+- In other words, the real equation here is:
+
+y ~ intercept + slope * x + (Error)
+
+- One of the primary assumptions of the standard linear model is that the Error term is normally distributed with a mean of zero.
+- So if we want to actually simulate data that resembles our observed data, we need to add a random number from a normal distribution to each of our predictions.
+- The one piece of information we are still missing is the standard deviation of the error distribution.
 
 ## Residual error
 
+- The quantity we are looking for goes by a few different labels, like "root mean standard error", "residual error", and so on.
+- The intuitive idea is that it's the standard deviation of the error component that we need to add to the linear equation.
+- Mathematically, it turns out that it's not quite right to just get the standard deviation of our (observed) residuals, but it's close.
+- First, we can easily access our model residuals from our `lm` object, so that's nice.
+- And notice that the `summary()` of the model also prints out a `summary()` of those residuals.
+- To be clear: the vector of residuals is the vector of all the raw differences between the prediction (regression line) and observation.
+- So if you predicted 64.5 but got 67.8, the residual would be 3.3. Negative residuals means that the observed value was lower than the predicted value.
+- Looking at the distribution of residuals is also helpful, as is looking a scatterplot of residual by prediction.
+
 ```{r}
-galton_fit$residuals
-
+summary(galton_fit$residuals)
 summary(galton_fit)
-(sqrt(sum(galton_fit$residuals^2)/928))
-sd(galton_fit$residuals)
-(sqrt(sum(galton_fit$residuals^2)/926))
 
-(model_error <- summary(galton_fit)$sigma)
+Galton$resid <- galton_fit$residuals
+Galton$predicted <- galton_fit$fitted.values
+
+ggplot(Galton, aes(resid)) + geom_histogram()
+
+ggplot(Galton, aes(predicted, resid)) + geom_jitter()
+
+```
+
+- We'll revisit and discuss this more tomorrow.
+
+- Back to the topic of the RMSE, or standard deviation of the error component.
+- Just to review a bit of the math:
+  - We (typically) square residuals and sum them (sum of squares of errors) in order to assess how much error we have, because squaring makes everything positive, otherwise errors would "cancel out" and that's the opposite of what we want. When it comes to prediction, two wrongs don't make a right!
+  - If we literally took the mean of the squared error, like you might assume from the term "mean squared error", recall that this is the same as summing the squares and then dividing by N, the number of observations.
+  - But this literal "mean squared error" turns out to be biased. 
+  - If you're interested in this, there are lots of nice videos out there describing out a mean is an unbiased estimator of the population mean, but the mean square error is a biased estimator of the population variance.
+  - The basic intuition is that observed variance is always a little less (underestimated) than the population variance.
+  - The standard "correction" for this is that the variance and standard deviation are based on: sum(E^2)/(n-1) rather than sum(E^2)/N.
+  - But when we're talking about getting the RMSE from a linear model, we actually need to further "correct" the estimate, based on the number of predictors. This is related to the concept of degrees of freedom.
+  - Intuitively, the RMSE or standard deviation of the model error is always a little bigger than the standard deviation of the observed residuals, even the "unbiased" standard deviation.
+  - In this case, we have two parameters: the intercept and slope, so we need (N-2) in the denominator.
+  
+- Luckily for us, R already gives us the value we need, as the `sigma` component of the `summary(lm)` object. 
+- In the `summary(lm)` print-out, you can see that R prints out the quantity (rounded off a bit) as the "Residual standard error", and it reminds you what the degrees of freedom are for getting this (here it's N-2, or 926).
+- The code below walks you through these calculations, so you can see how they related to what I'm saying above, but really the number we are looking for is the final one, the `sigma` value that is equivalent to:
+  - sum(E^2)/(n-k)
+  - where E is the vector of residuals
+  - n is the number of observations
+  - and k is the number of model parameters (intercept plus predictors)
+
+```{r}
+(sqrt(sum(galton_fit$residuals^2)/928)) # biased
+(sqrt(sum(galton_fit$residuals^2)/(928 - 1))) # same as the sd()
+sd(galton_fit$residuals) # unbiased std deviation
+(sqrt(sum(galton_fit$residuals^2)/(928 - 2))) # model error, corrected for degrees of freedom
+
+(model_error <- summary(galton_fit)$sigma) # same as the last calculation above, most convenient
 
 ```
 
 ## Simulate data
 
+- Okay, now we have all the info we need in order to simulate some data sets:
+  0. the mean and sd of the parent heights
+    - not strictly necessary, but handy for generating parent data that matches the original population of parents
+  1. a sample size of how much data to generate (for now, taken from our original sample)
+  2. the intercept and slope(s) from our model estimates
+  3. the RMSE, which we can use as the standard deviation of the distribution of errors
+
+- Let's make variables for 0 & 1, since we haven't yet in this notebook.
+
 ```{r}
+parent_mean <- mean(Galton$parent)
+parent_sd <- sd(Galton$parent)
+
 sample_size <- nrow(Galton)
+```
+
+- To simulate a new data frame of data, we start by generating the parent heights
+
+```{r}
 galton_fake <- data.frame(parent = rnorm(sample_size, 
                                          mean = parent_mean,
                                          sd = parent_sd))
+```
+
+- And then to simulate the corresponding `y` values, we use our model parameters to get the *prediction* (i.e., on the regression line), and then add the model error.
+
+```{r}
 galton_fake$child <- galton_intercept + 
   galton_slope * galton_fake$parent + 
   rnorm(sample_size, mean = 0, sd = model_error)
+```
 
+- That's it!
+- So let's make some plots to compare this data to our original, so see how well it did.
+- You can re-repeat the two chunks above to see how it changes slightly each time.
+- It changes because of the error component, but this is a feature, not a bug.
+
+```{r}
 ggplot(galton_fake, aes(parent, child)) + geom_point()
 
 ggplot(galton_fake, aes(parent, child)) +
@@ -123,7 +260,24 @@ ggplot(galton_fake, aes(parent, child)) +
   geom_point()
 ```
 
+- To be clear:
+  - The first plot just plots our new data
+  - The second plot is our new data, on top of the original data, which is red and jittered.
+- So overall, the shape, range, etc. are all really close, so that's good! 
+- But we aren't re-creating all aspects of the data, because we are ignoring the 1-inch "grid" pattern from the original.
+- For our purposes, this is okay, but in general, this comparison between original data and model-generated data is a great opportunity to investigate and look for ways the model might be improved.
 
+
+### Side question: what's up with `ggplot2` syntax?
+
+- Why is it so weird?
+- First off: yes, ggplot2 syntax *is* weird, in the sense that not really anything else looks like that in R.
+- The shape is something like:
+  - expr() + expr() + expr() + expr()
+- On the other hand, I think this is really intentional, and turns out to be a good design for a concept of *building plots as layers*.
+- So the first call to `ggplot()` is self-contained, and it sets up basically the frame of the plot and what the basic *aesthetic* mappings are (`x`, `y`, and so on).
+- One of the interesting things is that you can actually assign any `ggplot` objects to variables, which can make it easier to build on them.
+- Here are some examples:
 
 ```{r}
 plot_base <- ggplot(galton_fake, aes(parent, child))
@@ -132,41 +286,336 @@ plot_base + geom_point()
 
 # Power analysis by simulation
 
+- Being able to simulate data from a model has lots of uses.
+- One handy use is that it gives us a means of carrying out a power analysis by simulation, without having to bother with the constraints of standard analytical formulas.
+- I'm not knocking analytic formulas when they are applicable, I'm just saying that we can get the same answers as those formulas using simulation, but also we can apply the same technique when the formulas are more problematic.
+
+- The technique here is as follows:
+  1. Set up all your parameters and info that you need to simulate your data (see that list above).
+    - Note that this also gives you the opportunity to *pick your own* values or check other values.
+    - For example, setting different parameter values as "what if?" situations, or checking different sample sizes.
+  2. Prepare and test code to do the simulations. We'll copy code from above and (minimally) adapt below. But part of the point here is that you should just do one simulation first and make sure it's working correctly before you start looping.
+  3. Put the process of: data generation -> model fitting -> value extraction inside a loop
+    - You may want to have a "results-catching" data frame and a variable to set the number of simulations just above the loop.
+    - For a simple null-hypothesis-testing power analysis, you mainly need to extract the relevant p-value(s) of interest. 
+  4. Run the loop, which adds the target values to a different row in your results data frame, for each separate simulation.
+    - I personally like to include a "poor man's progress bar" in loops that might take more than a few seconds, to help reassure my nervous mind.
+  5. Examine and analyze your results.
+    - For a power analysis, you are typically looking for the proportion of simulations where your p-value was below the significance threshold (aka alpha).
+
+- Let's do it!
+
 ```{r}
+#############################################################
+# setting up values
+
+# the model parameters and error for generating the data
 parent_mean <- mean(Galton$parent)
 parent_sd <- sd(Galton$parent)
-
-# sample_size <- nrow(Galton)
-sample_size <- 50
-
 galton_fit <- lm(child ~ 1 + parent, data = Galton)
-
 (galton_intercept <- galton_fit$coefficients["(Intercept)"])
 (galton_slope <- galton_fit$coefficients["parent"])
-galton_slope <- .3
+# galton_slope <- .3          # uncomment if you want to specify an effect size (in slope units) 
 (model_error <- summary(galton_fit)$sigma)
 
+# sample size and significance threshold
+sample_size <- 30
+# sample_size <- nrow(Galton) # uncomment to do post-hoc power on original data
+alpha <- .05
+
+##############################################################
+# set up prior to the loop
 n_sim <- 10000
 sim_results <- data.frame(pval = rep(NA, n_sim))
 
+##############################################################
+# loop over simulations
 for(sim in 1:n_sim) {
-  if(sim %% 1000 == 0) { cat(paste("On sim num", sim, "\n")) }
+  # "poor man's progress bar", prints a message every 1000 simulations
+  if(sim %% 1000 == 0) { cat(paste("Working on simulation number: ", sim, "\n")) }
+  # generate the data
   galton_fake <- data.frame(parent = rnorm(sample_size, 
                                          mean = parent_mean,
                                          sd = parent_sd))
   galton_fake$child <- galton_intercept + 
     galton_slope * galton_fake$parent + 
     rnorm(sample_size, mean = 0, sd = model_error)
+  # fit a model to the simulated data
   galton_fake_fit <- lm(child ~ 1 + parent, data = galton_fake)
+  # extract the slope p-value from the summary coefficient table
   sim_results[sim, "pval"] <- summary(galton_fake_fit)$coefficients[2, 4]
 }
 
+#############################################################
+# process results
 head(sim_results)
 summary(sim_results)
 
-mean(sim_results$pval < .05)
+# this tells you the proportion of simulations where p is less than your threshold
+mean(sim_results$pval < alpha)
 
 ```
 
 
+# Exercises and practice
+
+- If I have sample solutions, I'll put them at the bottom of the file, in case you want to check your own solution but don't want to accidentally "peek" before trying it yourself.
+
+## Exercise 1: simulating a different data set
+
+- Use the `mammals` data set from the `MASS` package.
+- See `?mammals` for details.
+- I recommend trying this both with and without log-transforming the `body` and `brain` variables.
+- Go through the process of:
+  1. Fitting a model where body weight predicts brain weight (because the former is usually a lot easier to measure!)
+  2. Plotting a scatterplot and regression line
+  3. Simulating data from the model
+  4. Using plots to compare the original and simulated data
+
+```{r}
+
+```
+
+
+## Exercise 2: a slightly different simulation, with resampling
+
+- In the main code above, we used `rnorm()` to simulate the parent heights.
+- In Day 1, we also looked at resampling data instead of generating from a distribution.
+- If we wanted to try that here, should this resampling be done with replacement or without?
+- Try creating a simulated data set, but this time, instead of generating the parent heights with `rnorm()`, use resampling instead.
+
+```{r}
+
+```
+
+
+## Exercise 2.5 (extra credit): power with resamples
+
+- Use the simulation method for a power analysis, but this time, use the resampling method of generating parent heights, as in Exercise 2
+
+```{r}
+
+```
+
+## Exercise 3: automating more of the power analysis
+
+- The code above for running our power analysis is fine, but if you want to check out different values, like different levels of alpha, different sample sizes, and different slope/effect sizes, you would have to do so "manually" in kind of a one-off situation.
+- Try creating code to get a more complete/systematic analysis of one or more of these dimensions.
+- For example, you could try a bunch of different sample sizes, or alphas, or effects.
+- There are some different ways to approach this, but a loop-within-a-loop might make sense.
+
+```{r}
+
+```
+
+
+
+# Some sample solutions
+
+
+## Exercise 1: simulating a different data set
+
+
+```{r}
+mammals$log_body <- log(mammals$body)
+mammals$log_brain <- log(mammals$brain)
+
+mammals_fit <- lm(brain ~ 1 + body, data = mammals)
+mammals_intercept <- mammals_fit$coefficients[1]
+mammals_slope <- mammals_fit$coefficients[2]
+
+mammals_log_fit <- lm(log_brain ~ 1 + log_body, data = mammals)
+mammals_log_intercept <- mammals_log_fit$coefficients[1]
+mammals_log_slope <- mammals_log_fit$coefficients[2]
+
+# For fun, I decided to plot both regression lines on both plots for comparison
+# red = regression on raw values
+# blue = regression on log values
+ggplot(mammals, aes(body, brain)) + geom_point() + 
+  geom_abline(aes(intercept = mammals_intercept, slope = mammals_slope),
+             linetype = 2, color = "red") +
+  geom_line(aes(y = exp(mammals_log_fit$fitted.values)),
+            linetype = 2, color = "blue")
+
+ggplot(mammals, aes(log_body, log_brain)) + geom_point() + 
+  geom_abline(aes(intercept = mammals_log_intercept, slope = mammals_slope),
+              linetype = 2, color = "blue") +
+  geom_line(aes(y = log(mammals_fit$fitted.values)),
+            linetype = 2, color = "red")
+
+```
+
+
+## Exercise 2: a slightly different simulation, with resampling
+
+- We don't need to alter the model-fitting code from above, but I'll re-iterate it here, just so the whole process is shown.
+- Note that since our linear regression model assumes normally distributed residuals, we still need to use `rnorm()` when generating the error component.
+- Left as an exercise to the reader to ponder the pros/cons of doing additional processing to make the child heights fit the "1-inch grid" pattern we see in the original Galton data.
+- I fiddled with the alpha (transparency) of the final plot, to try to give a better sense of how the original & simulated data compares.
+
+```{r}
+sample_size <- nrow(Galton)
+galton_fit <- lm(child ~ 1 + parent, data = Galton)
+galton_intercept <- galton_fit$coefficients["(Intercept)"]
+galton_slope <- galton_fit$coefficients["parent"]
+model_error <- summary(galton_fit)$sigma
+
+# This is the only line that needs to change!
+galton_fake_resampled <- data.frame(parent = sample(Galton$parent, sample_size, replace = TRUE))
+
+# generating `y` values is the same
+galton_fake_resampled$child <- galton_intercept + 
+  galton_slope * galton_fake_resampled$parent + 
+  rnorm(sample_size, mean = 0, sd = model_error)
+
+ggplot(galton_fake_resampled, aes(parent, child)) + geom_point()
+
+ggplot(galton_fake_resampled, aes(parent, child)) + geom_jitter()
+
+ggplot(galton_fake_resampled, aes(parent, child)) +
+  geom_jitter(alpha = .2) +
+  geom_jitter(aes(x = Galton$parent, y = Galton$child), color = "red", alpha = .2) 
+```
+
+## Exercise 2.5 (extra credit): power with resamples
+
+- To be honest, I'm not 100% sure if this *ought* to have an impact on the power.
+- I didn't really think so, but I wouldn't bet my life on it.
+- The simulations here seem to confirm that there's minimal if any difference at all.
+- But this is why this technique is handy, because you can just check for things like that.
+- In other words, if you are using simulations to estimate your power, you can check your analysis for "sensitivity" to a range of assumptions, not just the typical sample/alpha/effect size dimensions.
+
+```{r}
+#############################################################
+# setting up values
+
+# the model parameters and error for generating the data
+parent_mean <- mean(Galton$parent)
+parent_sd <- sd(Galton$parent)
+galton_fit <- lm(child ~ 1 + parent, data = Galton)
+(galton_intercept <- galton_fit$coefficients["(Intercept)"])
+(galton_slope <- galton_fit$coefficients["parent"])
+# galton_slope <- .3          # uncomment if you want to specify an effect size (in slope units) 
+(model_error <- summary(galton_fit)$sigma)
+
+# sample size and significance threshold
+sample_size <- 30
+# sample_size <- nrow(Galton) # uncomment to do post-hoc power on original data
+alpha <- .05
+
+##############################################################
+# set up prior to the loop
+n_sim <- 10000
+sim_results <- data.frame(pval = rep(NA, n_sim))
+
+##############################################################
+# loop over simulations
+for(sim in 1:n_sim) {
+  # "poor man's progress bar", prints a message every 1000 simulations
+  if(sim %% 1000 == 0) { cat(paste("Working on simulation number: ", sim, "\n")) }
+  # generate the data
+  galton_fake_resampled <- data.frame(parent = sample(Galton$parent, sample_size, replace = TRUE))
+  galton_fake_resampled$child <- galton_intercept + 
+    galton_slope * galton_fake_resampled$parent + 
+    rnorm(sample_size, mean = 0, sd = model_error)
+  # fit a model to the simulated data
+  galton_fake_resampled_fit <- lm(child ~ 1 + parent, data = galton_fake_resampled)
+  # extract the slope p-value from the summary coefficient table
+  sim_results[sim, "pval"] <- summary(galton_fake_resampled_fit)$coefficients[2, 4]
+}
+
+#############################################################
+# process results
+head(sim_results)
+summary(sim_results)
+
+# this tells you the proportion of simulations where p is less than your threshold
+mean(sim_results$pval < alpha)
+```
+
+
+## Exercise 3: automating more of the power analysis
+
+- I decided to go for sample size changes, because maybe I want to know how big of a sample of child-parent pairs I'd need in order to safely replicate the positive relationship at like 90% of the time.
+- Note that the `bind_rows()` function from the `dplyr` package is doing a lot of work here.
+
+```{r, eval = FALSE}
+#############################################################
+# setting up values
+
+# the model parameters and error for generating the data
+parent_mean <- mean(Galton$parent)
+parent_sd <- sd(Galton$parent)
+galton_fit <- lm(child ~ 1 + parent, data = Galton)
+(galton_intercept <- galton_fit$coefficients["(Intercept)"])
+(galton_slope <- galton_fit$coefficients["parent"])
+# galton_slope <- .3          # uncomment if you want to specify an effect size (in slope units) 
+(model_error <- summary(galton_fit)$sigma)
+
+# sample_size <- nrow(Galton) # uncomment to do post-hoc power on original data
+alpha <- .05
+
+##############################################################
+# set up prior to the loop
+
+# looping over sample sizes
+sample_sizes_to_check <- 20:50
+n_sim <- 10000
+sim_results <- data.frame(p = NULL, n = NULL)
+
+for(sample_size in sample_sizes_to_check) {
+  sim_results_sample <- data.frame(p = rep(NA, n_sim),
+                                   n = sample_size)
+  ##############################################################
+  # loop over simulations
+  for(sim in 1:n_sim) {
+    # "poor man's progress bar", prints a message every 1000 simulations
+    if(sim %% 1000 == 0) { cat(paste("Working on simulation number: ", sim, "for sample size", sample_size, "\n")) }
+    # generate the data
+    galton_fake <- data.frame(parent = rnorm(sample_size, 
+                                           mean = parent_mean,
+                                           sd = parent_sd))
+    galton_fake$child <- galton_intercept + 
+      galton_slope * galton_fake$parent + 
+      rnorm(sample_size, mean = 0, sd = model_error)
+    # fit a model to the simulated data
+    galton_fake_fit <- lm(child ~ 1 + parent, data = galton_fake)
+    # extract the slope p-value from the summary coefficient table
+    sim_results_sample[sim, "p"] <- summary(galton_fake_fit)$coefficients[2, 4]
+  }
+  
+  sim_results <- bind_rows(sim_results, sim_results_sample)
+
+}
+
+# writing results just to save run time later
+# write_csv(sim_results, "power_simulations_sample_20-50.csv")
+# sim_results <- read_csv("power_simulations_sample_20-50.csv")
+
+results_table <- sim_results |> group_by(n) |> 
+  summarize(power = mean(p < .05))
+
+ggplot(results_table, aes(n, power)) + geom_line() +
+  geom_hline(yintercept = .9, linetype = 2, color = "red")
+
+```
+
+
+## Exercise 4: programming challenge
+
+- Now that we've seen how to do all of this in a loop, how about using `replicate()`?
+- In other words, set up things so we don't need a loop for the original power analysis.
+- You will probably want to define a function that does all the work, and then use `replicate()` instead of a loop.
+
+```{r}
+
+```
+
+## Exercise 5: replicate and loops
+
+- Finally, now that you have `replicate()` working nicely, try looking across two parameters (effect size, sample size) by putting your replicate inside a couple of loops.
+
+```{r}
+
+```
 
