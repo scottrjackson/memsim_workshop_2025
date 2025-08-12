@@ -130,3 +130,43 @@ plot_base <- ggplot(galton_fake, aes(parent, child))
 plot_base + geom_point()
 ```
 
+# Power analysis by simulation
+
+```{r}
+parent_mean <- mean(Galton$parent)
+parent_sd <- sd(Galton$parent)
+
+# sample_size <- nrow(Galton)
+sample_size <- 50
+
+galton_fit <- lm(child ~ 1 + parent, data = Galton)
+
+(galton_intercept <- galton_fit$coefficients["(Intercept)"])
+(galton_slope <- galton_fit$coefficients["parent"])
+galton_slope <- .3
+(model_error <- summary(galton_fit)$sigma)
+
+n_sim <- 10000
+sim_results <- data.frame(pval = rep(NA, n_sim))
+
+for(sim in 1:n_sim) {
+  if(sim %% 1000 == 0) { cat(paste("On sim num", sim, "\n")) }
+  galton_fake <- data.frame(parent = rnorm(sample_size, 
+                                         mean = parent_mean,
+                                         sd = parent_sd))
+  galton_fake$child <- galton_intercept + 
+    galton_slope * galton_fake$parent + 
+    rnorm(sample_size, mean = 0, sd = model_error)
+  galton_fake_fit <- lm(child ~ 1 + parent, data = galton_fake)
+  sim_results[sim, "pval"] <- summary(galton_fake_fit)$coefficients[2, 4]
+}
+
+head(sim_results)
+summary(sim_results)
+
+mean(sim_results$pval < .05)
+
+```
+
+
+
