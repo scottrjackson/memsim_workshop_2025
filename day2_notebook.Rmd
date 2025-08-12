@@ -1,0 +1,16 @@
+---
+title: "Data Simulation & Hierarchical Models: Day 2"
+date: 2025-08-12
+---
+
+# Using Git in RStudio to pull from GitHub
+
+- Quick demo
+
+# Review and questions
+
+# Outline for today
+
+- Fit a simple regression
+- Simulating data from a regression
+- Estimating power through simulation
