@@ -608,40 +608,7 @@ ggplot(results_table, aes(n, power)) + geom_line() +
 - You will probably want to define a function that does all the work, and then use `replicate()` instead of a loop.
 
 ```{r}
-get_sim_pval <- function(original_data, model_fit,
-                      sample_size = NULL,
-                      effect_size = NULL,
-                      resampled_predictor = FALSE) {
-  
-  if(is.null(sample_size)) { 
-    sample_size = nrow(original_data) 
-  }
-  slope_label <- attr(model_fit$terms, "term.labels")
-
-  predictor_values <- original_data[, slope_label]
-  intercept <- model_fit$coefficients["(Intercept)"]
-  if(is.null(effect_size)) {
-    slope <- model_fit$coefficients[slope_label]
-  }
-  model_error <- summary(model_fit)$sigma
-  # generate the data
-  if(resampled_predictor) {
-    fake_data <- data.frame(new_predictor = sample(Galton$parent, sample_size, replace = TRUE))
-  } else {
-    predictor_mean <- mean(predictor_values)
-    predictor_sd <- sd(predictor_values)
-    fake_data <- data.frame(new_predictor = rnorm(sample_size, predictor_mean, predictor_sd))
-  }
-  fake_data$new_dv <- intercept + slope * fake_data$new_predictor + 
-    rnorm(sample_size, mean = 0, sd = model_error)
-  # fit a model to the simulated data
-  fake_fit <- lm(new_dv ~ 1 + new_predictor, data = fake_data)
-  
-  # extract the slope p-value from the summary coefficient table
-  p.val <- summary(fake_fit)$coefficients[2, 4]
-  
-  return(p.val)
-}
+source("get_sim_pval.R")
 
 system.time(
 sim_pvals <- replicate(10000, get_sim_pval(Galton, galton_fit, sample_size = 30))
@@ -679,7 +646,7 @@ for(slope in effect_sizes_to_check) {
 
 # writing results just to save run time later
 # write_csv(sim_results, "power_simulations_sample20-50_by_slopes.csv")
-# sim_results <- read_csv("power_simulations_sample20-50_by_slopes.csv")
+sim_results <- read_csv("power_simulations_sample20-50_by_slopes.csv")
 
 head(sim_results)
 

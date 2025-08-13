@@ -33,6 +33,35 @@ library(HistData)
   - **IMPORTANT**: Carmen has asked that we do not share this data outside the workshop.
   
 ```{r}
+carmen <- read_csv("summer25_stat_workshop_Canphon_parti24.csv")
+colnames(carmen)
+
+```
+
+
+# Exploring, Transforming, etc.
+
+```{r}
+ggplot(carmen, aes(TotalLook)) + geom_histogram()
+
+ggplot(carmen, aes(log(TotalLook))) + geom_histogram()
+
+carmen |> group_by(SLx, GapType, Age) |> summarize(count = n()) |> print(n = 50)
+
+carmen <- filter(carmen, ! SLx %in% "sup")
+
+carmen |> filter(TotalLook > 79950) |> group_by(SLx, GapType, Age) |> summarize(count = n()) |> print(n = 50)
+
+carmen |> group_by(SLx, GapType, Age) |> 
+  summarize(meanLooking = mean(TotalLook))
+
+carmen$logLook <- log(carmen$TotalLook)
+```
+
+## Start looking at predictors
+
+
+```{r}
 
 ```
 
