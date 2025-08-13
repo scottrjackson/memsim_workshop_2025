@@ -25,6 +25,7 @@ date: 2025-08-13
 library(MASS)
 library(tidyverse)
 library(HistData)
+library(car)
 ```
 
 
@@ -62,6 +63,125 @@ carmen$logLook <- log(carmen$TotalLook)
 
 
 ```{r}
+trial_fit <- lm(logLook ~ 1 + Trial, data = carmen)
+summary(trial_fit)
+ggplot(carmen, aes(Trial, logLook)) + geom_point() + 
+  geom_smooth() +
+  geom_smooth(method = "lm", formula = y ~ x, color = "red")
+
+trial_quad_fit <- lm(logLook ~ 1 + Trial + I(Trial^2), data = carmen)
+summary(trial_quad_fit)
+
+trial_log_fit <- lm(logLook ~ 1 + I(log(Trial)), data = carmen)
+summary(trial_log_fit)
+
+trial_centered_fit <- lm(logLook ~ 1 + Trial_c, data = carmen)
+summary(trial_centered_fit)
+
+AIC(trial_log_fit)
+AIC(trial_quad_fit)
+AIC(trial_centered_fit)
 
 ```
 
+## Categorical predictors
+
+
+```{r}
+ggplot(carmen, aes(SLx, logLook)) + geom_boxplot(aes(fill = GapType))
+ggplot(carmen, aes(SLx, logLook)) + geom_violin(aes(fill = GapType))
+
+slx_fit <- lm(logLook ~ 1 + Trial + SLx, data = carmen)
+summary(slx_fit)
+
+xtabs(~ Trial, carmen)
+mean(carmen$Trial)
+carmen$Trial_c <- carmen$Trial - 5
+
+slx_fit <- lm(logLook ~ 1 + Trial_c + SLx, data = carmen)
+summary(slx_fit)
+mean(carmen$SLx == "SL3")
+carmen$SLx_c <- as.numeric(carmen$SLx == "SL3") - 0.5
+
+slx_fit <- lm(logLook ~ 1 + Trial_c + SLx_c, data = carmen)
+summary(slx_fit)
+
+condition_fit <- lm(logLook ~ 1 + Trial_c + SLx * GapType, data = carmen)
+summary(condition_fit)
+```
+
+
+
+```{r}
+age_fit <- lm(logLook ~ 1 + Trial_c + Age, data = carmen)
+summary(age_fit)
+
+ggplot(carmen, aes(Age, logLook)) + geom_boxplot()
+```
+
+```{r}
+carmen$AgeCat2 <- as.numeric(carmen$Age %in% c("mos_09", "mos_12", "mos_14"))
+
+xtabs(~ AgeCat2 + Age, carmen)
+
+
+agecat2_fit <- lm(logLook ~ 1 + Trial_c + AgeCat2, data = carmen)
+summary(agecat2_fit)
+
+
+```
+
+## releveling factors
+
+```{r}
+class(carmen$Age)
+
+carmen$Age <- as.factor(carmen$Age)
+summary(carmen$Age)
+unique(as.numeric(carmen$Age))
+
+carmen$Age_mos07 <- factor(carmen$Age, 
+                           levels = c("mos_07", "mos_05", "mos_09",
+                                      "mos_12", "mos_14"))
+
+age_mos07_fit <- lm(logLook ~ 1 + Trial_c + Age_mos07, data = carmen)
+summary(age_mos07_fit)
+
+```
+
+# Side note: expand_grid()
+
+```{r}
+expand_grid(SLx = unique(carmen$SLx), GapType = unique(carmen$GapType),
+            Age = unique(carmen$Age))
+
+```
+
+# Model copmparison
+
+```{r}
+
+
+```
+
+
+# ANOVA from lm()
+
+- Use the `car` package, `Anova()` function
+
+```{r}
+summary(condition_fit)
+Anova(condition_fit)
+
+summary(age_fit)
+summary(age_mos07_fit)
+
+Anova(age_fit)
+Anova(age_mos07_fit)
+
+```
+
+
+# Notes to self:
+
+- remember how to get contrasts
