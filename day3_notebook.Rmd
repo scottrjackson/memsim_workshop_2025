@@ -1,0 +1,38 @@
+---
+title: "Data Simulation & Hierarchical Models: Day 2"
+date: 2025-08-13
+---
+
+# Review and questions
+
+- Plotting residuals and residuals vs. fitted
+- Questions?
+- Exercises?
+
+# Outline for today
+
+- New data: thanks, Carmen!
+- Transformations
+- Dealing with extreme/weird values
+- Categorical predictors
+- Multiple predictors
+- Interactions
+- Model comparisons vs. inference
+
+# Load packages
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(HistData)
+```
+
+
+# New data: child study from Carmen
+
+  - **IMPORTANT**: Carmen has asked that we do not share this data outside the workshop.
+  
+```{r}
+
+```
+
