@@ -643,8 +643,9 @@ get_sim_pval <- function(original_data, model_fit,
   return(p.val)
 }
 
-sim_pvals <- replicate(10000, get_sim_pval(Galton, galton_fit, sample_size = 40))
-
+system.time(
+sim_pvals <- replicate(10000, get_sim_pval(Galton, galton_fit, sample_size = 30))
+)
 mean(sim_pvals < .05)
 
 ```
@@ -653,7 +654,7 @@ mean(sim_pvals < .05)
 
 - Finally, now that you have `replicate()` working nicely, try looking across two parameters (effect size, sample size) by putting your replicate inside a couple of loops.
 
-```{r}
+```{r, eval = FALSE}
 effect_sizes_to_check <- c(0.25, 0.50, 0.75, 1.0)
 sample_sizes_to_check <- seq(20, 50, 5)
 
