@@ -83,9 +83,60 @@ for(country in 1:n_countries) {
 
 head(full_height_data)
 full_height_data |> group_by(country) |> summarize(count = n())
-cell_means <- full_height_data |> group_by(country) |> summarize(mean_parent = mean(parent)) 
+
+summarize(group_by(full_height_data, country), count = n())
+
+cell_means <- full_height_data |> group_by(country) |> 
+  summarize(mean_parent = mean(parent))
 cell_means$theoretical <- country_parent_means
 head(cell_means)
+
+height_lmer <- lmer(child ~ 1 + parent + (1|country), data = full_height_data)
+summary(height_lmer)
+
+height_lmer2 <- lmer(child ~ 1 + parent + (1 + parent|country), data = full_height_data)
+
+height_lmer2b <- lmer(child ~ 1 + parent + (1|country) + (0 + parent|country), data = full_height_data)
+
+summary(height_lmer2b)
+
+```
+
+Carmen's data
+
+```{r}
+carmen <- read_csv("summer25_stat_workshop_Canphon_parti24.csv")
+colnames(carmen)
+
+carmen$logLook <- log(carmen$TotalLook)
+
+ggplot(carmen, aes(Trial, logLook)) + geom_point() + 
+  geom_smooth(method = "lm")
+
+carmen$logTrial <- log(carmen$Trial)
+
+carmen_trial_lm <- lm(logLook ~ 1 + logTrial, data = carmen)
+summary(carmen_trial_lm)
+
+carmen_trial_lmer1 <- lmer(logLook ~ 1 + logTrial + (1|SubjectID), data = carmen)
+summary(carmen_trial_lmer1)
+
+carmen_trial_lmer2 <- lmer(logLook ~ 1 + logTrial + 
+                             (1 + logTrial|SubjectID), data = carmen)
+summary(carmen_trial_lmer2)
+
+carmen_trial_lmer2b <- lmer(logLook ~ 1 + logTrial + 
+                              (1|SubjectID) + 
+                              (0 + logTrial|SubjectID), data = carmen)
+summary(carmen_trial_lmer2b)
+
+
+sd(ranef(carmen_trial_lmer1)$SubjectID[, 1])
+
+bysubject_ranefs <- ranef(carmen_trial_lmer2)$SubjectID
+head(bysubject_ranefs)
+
+ggplot(bysubject_ranefs, aes(`(Intercept)`, logTrial)) + geom_point()
 
 ```
 
