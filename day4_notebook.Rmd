@@ -1,0 +1,60 @@
+---
+title: "Data Simulation & Hierarchical Models: Day 4"
+date: 2025-08-14
+---
+
+# Review and questions
+
+- Questions?
+- Scott's homework: checking out the `contrast` package
+
+# Outline for today
+
+- Generate a random effect
+- Use `lmer()` to fit the model
+- Practice using `lmer()` on Carmen's data
+- Interpreting random effects
+- Comparing models with different random effects
+- Practice: London's data
+
+# Loading packages
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(HistData)
+```
+
+# Recapping simulation from a simple linear model
+
+```{r}
+galton_fit <- lm(child ~ parent, Galton)
+summary(galton_fit)
+mean(Galton$parent)
+sd(Galton$parent)
+
+intercept <- 24
+slope <- 0.6
+rmse <- 2.25
+
+n_fake <- 1000
+fake_data <- data.frame(parent = rnorm(n_fake, mean = 68, sd = 1.8))
+fake_data$child <- intercept + slope * fake_data$parent + rnorm(n_fake, mean = 0, sd = rmse)
+
+summary(lm(child ~ 1 + parent, fake_data))
+
+generate_height_data <- function(n, intercept, slope, rmse,
+                                 parent_mean, parent_sd) {
+  fake_data <- data.frame(parent = rnorm(n, mean = parent_mean, sd = parent_sd))
+  fake_data$child <- intercept + slope * fake_data$parent + rnorm(n, mean = 0, sd = rmse)
+  
+  return(fake_data)
+}
+
+fake2 <- generate_height_data(1000, 25, 0.6, 2.2, 68, 1.8)
+
+summary(lm(child ~ 1 + parent, fake2))
+
+```
+
