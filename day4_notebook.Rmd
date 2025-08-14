@@ -29,10 +29,10 @@ library(HistData)
 # Recapping simulation from a simple linear model
 
 ```{r}
-galton_fit <- lm(child ~ parent, Galton)
+galton_fit <- lm(child ~ 1 + parent, Galton)
 summary(galton_fit)
-mean(Galton$parent)
-sd(Galton$parent)
+(parent_mean <- mean(Galton$parent))
+(parent_sd <- sd(Galton$parent))
 
 intercept <- 24
 slope <- 0.6
@@ -52,9 +52,40 @@ generate_height_data <- function(n, intercept, slope, rmse,
   return(fake_data)
 }
 
-fake2 <- generate_height_data(1000, 25, 0.6, 2.2, 68, 1.8)
+fake_data2 <- generate_height_data(1000, 25, 0.6, 2.2, 68, 1.8)
 
-summary(lm(child ~ 1 + parent, fake2))
+summary(lm(child ~ 1 + parent, fake_data2))
+
+```
+
+Now let's do random effects
+
+```{r}
+n_countries <- 25
+
+(country_parent_means <- rnorm(n = n_countries, mean = 68, sd = 2))
+(country_intercepts <- rnorm(n = n_countries, mean = 24, sd = 3))
+
+n_per_country <- 40
+full_height_data <- data.frame(parent = NULL, child = NULL, country = NULL)
+for(country in 1:n_countries) {
+  
+  country_data <- generate_height_data(n_per_country,
+                                       intercept = country_intercepts[country],
+                                       slope = slope,
+                                       rmse = rmse,
+                                       parent_mean = country_parent_means[country],
+                                       parent_sd = 2)
+  country_data$country <- country
+  full_height_data <- bind_rows(full_height_data, country_data)
+  
+}
+
+head(full_height_data)
+full_height_data |> group_by(country) |> summarize(count = n())
+cell_means <- full_height_data |> group_by(country) |> summarize(mean_parent = mean(parent)) 
+cell_means$theoretical <- country_parent_means
+head(cell_means)
 
 ```
 
