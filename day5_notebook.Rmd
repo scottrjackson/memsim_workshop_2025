@@ -17,10 +17,24 @@ date: 2025-08-15
     - simple coefficients
     - random intercept and slopes by subject
 
-
 # Review, questions
 
+# Load packages
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(multcomp)
+```
+
+
 # A little exploration of London's data
+
+```{r}
+london <- read_csv("nat_similarity_lex.csv")
+```
+
 
 # Contrasts
 
