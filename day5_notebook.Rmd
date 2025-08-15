@@ -90,12 +90,58 @@ summary(london_lm)
 
 
 ```{r, eval = FALSE}
+test_contrasts <- rbind(c(0, 0, -1, 0),
+                        c(0, 0, -1, -1),
+                        c(0, 0, -1, -0.5))
+rownames(test_contrasts) <- c("relatedness for none condition",
+                              "relatedness for hidden condition",
+                              "average relatedness across repetition")
+print(test_contrasts)
 # from lmerTest
-contest1D(MODEL, test_contrasts[1, ])
+# contest1D(london_lm, test_contrasts)
 
 # from multcomp
-summary(glht(MODEL, linfct = test_contrasts))
+summary(glht(london_lm, linfct = test_contrasts))
 ```
 
+Mixed-effect
+
+```{r}
+london_lmer1a <- lmer(logRT ~ 1 + repetition * related + (1|subject_id), 
+                      data = london)
+summary(london_lmer1a)
+
+london_lmer1b <- lmer(logRT ~ 1 + repetition * related + (1 + related|subject_id), 
+                      data = london)
+
+summary(london_lmer1b)
+
+
+# extract some contrasts
+summary(glht(london_lmer1b, linfct = test_contrasts))
+contest1D(london_lmer1b, test_contrasts[3, ])
+
+```
+
+
+
 # Big simulation
+
+```{r}
+intercept <- 6.5
+related_effect <- -0.03
+hidden_effect <- 0.035
+related_hidden_interaction <- -0.035
+
+n_per_condition <- 600
+london_design <- expand_grid(related = c("related", "unrelated"),
+                             repetition = c("hidden", "none"))
+
+slope_matrix <- london_design
+slope_matrix$slope <- c(0.035, 0, -0.035, 0.07)
+
+```
+
+
+
 
