@@ -19,6 +19,8 @@ date: 2025-08-15
 
 # Review, questions
 
+  - 
+
 # Load packages
 
 ```{r}
@@ -33,15 +35,67 @@ library(multcomp)
 
 ```{r}
 london <- read_csv("nat_similarity_lex.csv")
+colnames(london)
+xtabs(~ Accuracy, london)
+
+length(unique(london$subject_id))
+length(unique(london$target))
+
+london |> group_by(repetition, related) |> summarize(count = n())
+london |> group_by(repetition, related, subject_id) |> summarize(count = n()) |>
+  summary()
+
+london |> group_by(repetition, related, subject_id) |> 
+  summarize(count = n(), meanRT = mean(logRT)) |>
+  arrange(meanRT)
+
+london |> group_by(subject_id, repetition, related) |> 
+  summarize(count = n())
+
+london |> group_by(subject_id, repetition, related) |> 
+  summarize(count = n()) |> summarize(count = n()) |> summarize(count = n())
+
+london |> group_by(subject_id, repetition, related) |> 
+  summarize(count = n()) |> ungroup() |> 
+  group_by(subject_id) |> summarize(count = n()) |> summary()
+
+ggplot(london, aes(RT)) + geom_histogram()
+ggplot(london, aes(logRT)) + geom_histogram()
+
 ```
 
 
 # Contrasts
 
-| conditions | related    | unrelated  |
+```{r}
+london_lm <- lm(logRT ~ 1 + repetition * related, data = london)
+summary(london_lm)
+
+london$related <- relevel(as.factor(london$related), "unrelated")
+london$repetition <- relevel(as.factor(london$repetition), "none")
+
+summary(london)
+
+london_lm <- lm(logRT ~ 1 + repetition * related, data = london)
+summary(london_lm)
+
+```
+
+
+
+| conditions | unrelated  | related    |
 |:---        | ---:       | ---:       |
-| none       |  |  |
-| hidden     |  |  |
+| none       | 0, 0, 0, 0 | 0, 0, 1, 0 |
+| hidden     | 0, 1, 0, 0 | 0, 1, 1, 1 |
+
+
+```{r, eval = FALSE}
+# from lmerTest
+contest1D(MODEL, test_contrasts[1, ])
+
+# from multcomp
+summary(glht(MODEL, linfct = test_contrasts))
+```
 
 # Big simulation
 
