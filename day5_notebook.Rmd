@@ -116,10 +116,39 @@ london_lmer1b <- lmer(logRT ~ 1 + repetition * related + (1 + related|subject_id
 
 summary(london_lmer1b)
 
-
 # extract some contrasts
 summary(glht(london_lmer1b, linfct = test_contrasts))
 contest1D(london_lmer1b, test_contrasts[3, ])
+
+london_lmer1c <- lmer(logRT ~ 1 + repetition * related + 
+                        (1 + repetition + related|subject_id), 
+                      data = london)
+
+summary(london_lmer1c)
+
+london_lmer1d <- lmer(logRT ~ 1 + repetition * related + 
+                        (1 + repetition + related|subject_id) +
+                        (1 | target), 
+                      data = london)
+summary(london_lmer1d)
+london_lmer1e <- lmer(logRT ~ 1 + repetition * related + 
+                        (1 + repetition + related|subject_id) +
+                        (1 + related| target), 
+                      data = london)
+summary(london_lmer1e)
+
+london_lmer1b_ML <- update(london_lmer1b, REML = FALSE)
+london_lmer1c_ML <- update(london_lmer1c, REML = FALSE)
+(AIC(london_lmer1b_ML))
+(AIC(london_lmer1c_ML))
+anova(london_lmer1c_ML, london_lmer1b_ML)
+
+
+london_lmer1d_ML <- update(london_lmer1d, REML = FALSE)
+london_lmer1e_ML <- update(london_lmer1e, REML = FALSE)
+(AIC(london_lmer1d_ML))
+(AIC(london_lmer1e_ML))
+anova(london_lmer1d_ML, london_lmer1e_ML)
 
 ```
 
@@ -128,17 +157,54 @@ contest1D(london_lmer1b, test_contrasts[3, ])
 # Big simulation
 
 ```{r}
-intercept <- 6.5
-related_effect <- -0.03
-hidden_effect <- 0.035
-related_hidden_interaction <- -0.035
+summary(london_lmer1d)$coef
+
+intercept <- 6.50
+reference <- 0
+related_effect <- -0.0167
+hidden_effect <- 0.0277
+related_hidden_interaction <- -0.0174
+rmse <- 0.24
 
 n_per_condition <- 600
-london_design <- expand_grid(related = c("related", "unrelated"),
-                             repetition = c("hidden", "none"))
+london_design <- expand_grid(related = c("unrelated", "related"),
+                             repetition = c("none", "hidden"))
+london |> group_by(related, repetition) |> summarize()
 
 slope_matrix <- london_design
-slope_matrix$slope <- c(0.035, 0, -0.035, 0.07)
+
+slope_matrix$slope <- c(reference, 
+                        hidden_effect, 
+                        related_effect, 
+                        sum(related_effect, hidden_effect,  related_hidden_interaction))
+
+slope_matrix
+slope_matrix$intercept <- intercept
+
+slope_matrix <- mutate(slope_matrix, prediction = intercept + slope)
+slope_matrix
+
+data_grid <- expand_grid(related = c("unrelated", "related"),
+                         repetition = c("none", "hidden"),
+                         obs = 1:600)
+nrow(data_grid)
+
+sim_data <- full_join(slope_matrix, data_grid)
+nrow(sim_data)
+head(sim_data)
+
+sim_data$sim_logRT <- sim_data$prediction + rnorm(nrow(sim_data), mean = 0, sd = rmse)
+
+sim_lm <- lm(sim_logRT ~ 1 + repetition * related, sim_data)
+summary(glht(sim_lm, linfct = test_contrasts))
+
+```
+
+```{r}
+set.seed(42)
+rnorm(5)
+
+
 
 ```
 
