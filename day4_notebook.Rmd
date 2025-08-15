@@ -108,6 +108,8 @@ Carmen's data
 carmen <- read_csv("summer25_stat_workshop_Canphon_parti24.csv")
 colnames(carmen)
 
+carmen |> group_by(Legality, SLx) |> summarize(count = n())
+
 carmen$logLook <- log(carmen$TotalLook)
 
 ggplot(carmen, aes(Trial, logLook)) + geom_point() + 
@@ -139,4 +141,60 @@ head(bysubject_ranefs)
 ggplot(bysubject_ranefs, aes(`(Intercept)`, logTrial)) + geom_point()
 
 ```
+
+
+```{r}
+carmen_legality_lmer <- lmer(logLook ~ 1 + logTrial + Legality +
+                               (1+logTrial|SubjectID), data = carmen)
+summary(carmen_legality_lmer)
+
+carmen_legality_lmer2 <- lmer(logLook ~ 1 + logTrial + Legality * preference +
+                               (1+logTrial|SubjectID), data = carmen)
+summary(carmen_legality_lmer2)
+```
+
+
+```{r}
+summary(carmen_trial_lm)$coef
+summary(carmen_trial_lmer1)$coef
+summary(carmen_trial_lmer2)$coef
+
+sqrt(diag(VarCorr(carmen_trial_lmer1)$SubjectID))
+sqrt(diag(VarCorr(carmen_trial_lmer2)$SubjectID))
+
+
+carmen_trial_lmer1_ML <- update(carmen_trial_lmer1, REML = FALSE)
+summary(carmen_trial_lmer1_ML)
+carmen_trial_lmer2_ML <- update(carmen_trial_lmer2, REML = FALSE)
+summary(carmen_trial_lmer2_ML)
+
+AIC(carmen_trial_lm)
+AIC(carmen_trial_lmer1_ML)
+AIC(carmen_trial_lmer2_ML)
+
+anova(carmen_trial_lmer2_ML, carmen_trial_lmer1_ML, carmen_trial_lm)
+```
+
+
+```{r}
+xtabs(~ Sex, carmen)
+
+carmen_sex_lm1 <- lm(logLook ~ 1 + Sex, data = carmen)
+carmen_sex_lmer1 <- lmer(logLook ~ 1 + Sex + (1|SubjectID), data = carmen)
+summary(carmen_sex_lm1)
+summary(carmen_sex_lmer1)
+AIC(carmen_sex_lm1)
+AIC(carmen_sex_lmer1)
+carmen_subject_lm1 <- lm(logLook ~ 1 + logTrial + SubjectID, data = carmen)
+summary(carmen_subject_lm1)
+AIC(carmen_subject_lm1)
+AIC(carmen_trial_lmer1_ML)
+
+anova(carmen_trial_lmer1_ML, carmen_subject_lm1)
+
+carmen_subject_lm2 <- lm(logLook ~ 1 + logTrial * SubjectID, data = carmen)
+summary(carmen_subject_lm2)
+
+```
+
 
