@@ -1,0 +1,33 @@
+---
+title: "Data Simulation & Hierarchical Models: Day 5"
+date: 2025-08-15
+---
+
+# Logistics
+
+  - Updates, revisions
+
+# Agenda
+
+  - review, questions
+  - new data: from London
+  - summary table tips using `dplyr`
+  - testing contrasts with the `multcomp` and `lmerTest` packages
+  - full simulation example with London's data
+    - simple coefficients
+    - random intercept and slopes by subject
+
+
+# Review, questions
+
+# A little exploration of London's data
+
+# Contrasts
+
+| conditions | related    | unrelated  |
+|:---        | ---:       | ---:       |
+| none       |  |  |
+| hidden     |  |  |
+
+# Big simulation
+
